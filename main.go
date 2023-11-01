@@ -42,24 +42,24 @@ type NotificationStrategy interface {
 	Notify(temperature float64)
 }
 
-type EmailNotification struct{}
+type Notification struct{}
 
-func (en *EmailNotification) Notify(temperature float64) {
+func (en *Notification) Notify(temperature float64) {
 	fmt.Printf("New notification: Temperature is %.2f°C\n", temperature)
 }
 
-var weatherStationInstance *WeatherStation
+var weatherStation *WeatherStation
 var once sync.Once
 
-func GetWeatherStationInstance() *WeatherStation {
+func getWeather() *WeatherStation {
 	once.Do(func() {
-		weatherStationInstance = &WeatherStation{}
+		weatherStation = &WeatherStation{}
 	})
-	return weatherStationInstance
+	return weatherStation
 }
 
 func main() {
-	weatherStation := GetWeatherStationInstance()
+	weatherStation := getWeather()
 
 	command := &UpdateTemperatureCommand{
 		weatherStation: weatherStation,
@@ -67,6 +67,6 @@ func main() {
 	}
 	command.Execute()
 
-	strategy := &EmailNotification{}
+	strategy := &Notification{}
 	strategy.Notify(6.0)
 }
