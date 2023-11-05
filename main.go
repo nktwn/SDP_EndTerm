@@ -1,122 +1,135 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 )
 
-// --- Singleton Pattern ---
-type Config struct {
-	AppName string
+// ==================================
+// singleton
+
+type Configuration struct {
+	// Добавьте любые глобальные настройки сюда.
 }
 
-var instance *Config
+var instance *Configuration
 var once sync.Once
 
-func GetConfigInstance() *Config {
+func GetConfig() *Configuration {
 	once.Do(func() {
-		instance = &Config{AppName: "Task Management System"}
+		instance = &Configuration{
+			// инициализация конфигурации.
+		}
 	})
 	return instance
 }
 
-// --- Factory Pattern ---
-type Task interface {
-	Describe() string
-}
-
-type PersonalTask struct {
+// ==================================
+// Factory
+type Task struct {
+	ID   int
 	Name string
+	Done bool
 }
 
-func (p *PersonalTask) Describe() string {
-	return "Personal: " + p.Name
+type TaskFactory struct {
+	nextID int
 }
 
-type WorkTask struct {
-	Name string
+func (f *TaskFactory) CreateTask(name string) *Task {
+	f.nextID++
+	return &Task{ID: f.nextID, Name: name, Done: false}
 }
 
-func (w *WorkTask) Describe() string {
-	return "Work: " + w.Name
-}
+// ==================================
+// Command
 
-func NewTask(taskType, name string) Task {
-	switch taskType {
-	case "personal":
-		return &PersonalTask{Name: name}
-	case "work":
-		return &WorkTask{Name: name}
-	default:
-		return nil
-	}
-}
-
-// --- Command Pattern ---
 type Command interface {
 	Execute()
 }
 
-type AddTaskCommand struct {
-	TaskType, TaskName string
-	TaskList           *[]Task
-}
-
-func (a *AddTaskCommand) Execute() {
-	task := NewTask(a.TaskType, a.TaskName)
-	*a.TaskList = append(*a.TaskList, task)
-	fmt.Println("Added: " + task.Describe())
-}
-
-// --- Observer Pattern ---
-type Observer interface {
-	Update(task Task)
-}
-
-type TaskObserver struct {
-	Name string
-}
-
-func (to *TaskObserver) Update(task Task) {
-	fmt.Printf("Observer %s: New task added - %s\n", to.Name, task.Describe())
-}
-
-// --- Subject ---
 type TaskManager struct {
-	observers []Observer
-	tasks     []Task
+	tasks []*Task
 }
 
-func (tm *TaskManager) AddObserver(observer Observer) {
-	tm.observers = append(tm.observers, observer)
+func (manager *TaskManager) AddTask(task *Task) {
+	manager.tasks = append(manager.tasks, task)
+	fmt.Printf("Задача '%s' добавлена.\n", task.Name)
 }
 
-func (tm *TaskManager) NotifyObservers(task Task) {
-	for _, observer := range tm.observers {
-		observer.Update(task)
+func (manager *TaskManager) PrintTasks() {
+	for _, task := range manager.tasks {
+		doneLabel := "Не выполнено"
+		if task.Done {
+			doneLabel = "Выполнено"
+		}
+		fmt.Printf("Задача: %s, Статус: %s\n", task.Name, doneLabel)
 	}
 }
 
-func (tm *TaskManager) AddTask(taskType, taskName string) {
-	cmd := &AddTaskCommand{TaskType: taskType, TaskName: taskName, TaskList: &tm.tasks}
-	cmd.Execute()
-	tm.NotifyObservers(NewTask(taskType, taskName))
+// ==================================
+// Observer
+
+type Observer interface {
+	Notify(task *Task)
 }
 
+type TaskObserver struct {
+	// Добавьте свои поля, если необходимо.
+}
+
+func (o *TaskObserver) Notify(task *Task) {
+	fmt.Printf("Задача '%s' обновлена.\n", task.Name)
+}
+
+// ==================================
+// MAIN
+
 func main() {
-	// Singleton
-	config := GetConfigInstance()
-	fmt.Println("App: " + config.AppName)
+	config := GetConfig()
+	fmt.Println("Конфигурация загружена:", config)
 
-	// Observer
-	taskManager := &TaskManager{}
-	observer1 := &TaskObserver{Name: "Observer1"}
-	observer2 := &TaskObserver{Name: "Observer2"}
+	taskFactory := TaskFactory{}
+	taskManager := TaskManager{}
+	observer := TaskObserver{}
 
-	taskManager.AddObserver(observer1)
-	taskManager.AddObserver(observer2)
+	scanner := bufio.NewScanner(os.Stdin)
+	for {
+		fmt.Println("Введите команду (add <name>, done <id>, print, exit):")
+		scanner.Scan()
+		input := scanner.Text()
+		args := strings.Fields(input)
 
-	// Command and Factory
-	taskManager.AddTask("personal", "Buy groceries")
-	taskManager.AddTask("work", "Finish project")
+		if len(args) == 0 {
+			continue
+		}
+
+		switch args[0] {
+		case "add":
+			if len(args) < 2 {
+				fmt.Println("Не указано имя задачи.")
+				continue
+			}
+			taskName := strings.Join(args[1:], " ")
+			task := taskFactory.CreateTask(taskName)
+			taskManager.AddTask(task)
+			observer.Notify(task)
+
+		case "done":
+			fmt.Println("Функция 'done' еще не реализована.")
+
+		case "print":
+			taskManager.PrintTasks()
+
+		case "exit":
+			fmt.Println("Выход из программы.")
+			return
+
+		default:
+			fmt.Println("Неизвестная команда.")
+		}
+	}
 }
