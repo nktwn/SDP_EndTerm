@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -66,8 +67,19 @@ func (manager *TaskManager) PrintTasks() {
 		if task.Done {
 			doneLabel = "Выполнено"
 		}
-		fmt.Printf("Задача: %s, Статус: %s\n", task.Name, doneLabel)
+		fmt.Printf("%v: Задача: %s, Статус: %s\n", task.ID, task.Name, doneLabel)
 	}
+}
+
+func (manager *TaskManager) MarkDone(taskID int) {
+	for _, task := range manager.tasks {
+		if task.ID == taskID {
+			task.Done = true
+			fmt.Printf("Задача '%s' отмечена как выполненная.\n", task.Name)
+			return
+		}
+	}
+	fmt.Println("Задача с указанным ID не найдена.")
 }
 
 // ==================================
@@ -119,7 +131,16 @@ func main() {
 			observer.Notify(task)
 
 		case "done":
-			fmt.Println("Функция 'done' еще не реализована.")
+			if len(args) < 2 {
+				fmt.Println("Не указан ID задачи.")
+				continue
+			}
+			taskID, err := strconv.Atoi(args[1])
+			if err != nil {
+				fmt.Println("ID задачи должен быть числом.")
+				continue
+			}
+			taskManager.MarkDone(taskID)
 
 		case "print":
 			taskManager.PrintTasks()
