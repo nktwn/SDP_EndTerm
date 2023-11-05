@@ -5,68 +5,118 @@ import (
 	"sync"
 )
 
-type Observer interface {
-	Update(temperature float64)
+// --- Singleton Pattern ---
+type Config struct {
+	AppName string
 }
 
-type WeatherStation struct {
-	observers   []Observer
-	temperature float64
+var instance *Config
+var once sync.Once
+
+func GetConfigInstance() *Config {
+	once.Do(func() {
+		instance = &Config{AppName: "Task Management System"}
+	})
+	return instance
 }
 
-func (ws *WeatherStation) SetTemperature(temp float64) {
-	ws.temperature = temp
-	ws.NotifyObservers()
+// --- Factory Pattern ---
+type Task interface {
+	Describe() string
 }
 
-func (ws *WeatherStation) NotifyObservers() {
-	for _, o := range ws.observers {
-		o.Update(ws.temperature)
+type PersonalTask struct {
+	Name string
+}
+
+func (p *PersonalTask) Describe() string {
+	return "Personal: " + p.Name
+}
+
+type WorkTask struct {
+	Name string
+}
+
+func (w *WorkTask) Describe() string {
+	return "Work: " + w.Name
+}
+
+func NewTask(taskType, name string) Task {
+	switch taskType {
+	case "personal":
+		return &PersonalTask{Name: name}
+	case "work":
+		return &WorkTask{Name: name}
+	default:
+		return nil
 	}
 }
 
+// --- Command Pattern ---
 type Command interface {
 	Execute()
 }
 
-type UpdateTemperatureCommand struct {
-	weatherStation *WeatherStation
-	temperature    float64
+type AddTaskCommand struct {
+	TaskType, TaskName string
+	TaskList           *[]Task
 }
 
-func (utc *UpdateTemperatureCommand) Execute() {
-	utc.weatherStation.SetTemperature(utc.temperature)
+func (a *AddTaskCommand) Execute() {
+	task := NewTask(a.TaskType, a.TaskName)
+	*a.TaskList = append(*a.TaskList, task)
+	fmt.Println("Added: " + task.Describe())
 }
 
-type NotificationStrategy interface {
-	Notify(temperature float64)
+// --- Observer Pattern ---
+type Observer interface {
+	Update(task Task)
 }
 
-type Notification struct{}
-
-func (en *Notification) Notify(temperature float64) {
-	fmt.Printf("New notification: Temperature is %.2f°C\n", temperature)
+type TaskObserver struct {
+	Name string
 }
 
-var weatherStation *WeatherStation
-var once sync.Once
+func (to *TaskObserver) Update(task Task) {
+	fmt.Printf("Observer %s: New task added - %s\n", to.Name, task.Describe())
+}
 
-func getWeather() *WeatherStation {
-	once.Do(func() {
-		weatherStation = &WeatherStation{}
-	})
-	return weatherStation
+// --- Subject ---
+type TaskManager struct {
+	observers []Observer
+	tasks     []Task
+}
+
+func (tm *TaskManager) AddObserver(observer Observer) {
+	tm.observers = append(tm.observers, observer)
+}
+
+func (tm *TaskManager) NotifyObservers(task Task) {
+	for _, observer := range tm.observers {
+		observer.Update(task)
+	}
+}
+
+func (tm *TaskManager) AddTask(taskType, taskName string) {
+	cmd := &AddTaskCommand{TaskType: taskType, TaskName: taskName, TaskList: &tm.tasks}
+	cmd.Execute()
+	tm.NotifyObservers(NewTask(taskType, taskName))
 }
 
 func main() {
-	weatherStation := getWeather()
+	// Singleton
+	config := GetConfigInstance()
+	fmt.Println("App: " + config.AppName)
 
-	command := &UpdateTemperatureCommand{
-		weatherStation: weatherStation,
-		temperature:    6.0,
-	}
-	command.Execute()
+	// Observer
+	taskManager := &TaskManager{}
+	observer1 := &TaskObserver{Name: "Observer1"}
+	observer2 := &TaskObserver{Name: "Observer2"}
 
-	strategy := &Notification{}
-	strategy.Notify(6.0)
+	taskManager.AddObserver(observer1)
+	taskManager.AddObserver(observer2)
+
+	// Command and Factory
+	taskManager.AddTask("personal", "Buy groceries")
+	taskManager.AddTask("work", "Finish project")
 }
