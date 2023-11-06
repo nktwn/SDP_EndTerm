@@ -8,9 +8,7 @@ import (
 )
 
 var front *template.Template
-var taskFactory back.TaskFactory
-var taskManager back.TaskManager
-var observer back.TaskObserver
+
 var config *back.Configuration
 
 type pageData struct {
@@ -21,7 +19,10 @@ type pageData struct {
 
 func web_page(result http.ResponseWriter, call *http.Request) {
 	data := pageData{}
-	fmt.Println("Конфигурация загружена:", config)
+	taskManager := config.TaskManager
+	taskFactory := config.TaskFactory
+	observer := config.Observer
+
 	if call.URL.Path != "/" {
 		data.ShowError = 404
 		data.ErrorCall = "Page Not Found"
@@ -55,11 +56,11 @@ func errorCall(result http.ResponseWriter, call *http.Request, data *pageData) {
 	front.ExecuteTemplate(result, "error.html", data)
 }
 
+
+
 func Start_page() {
-	taskFactory = back.TaskFactory{}
-	taskManager = back.TaskManager{}
-	observer = back.TaskObserver{}
 	config = back.GetConfig()
+
 	front = template.Must(template.ParseGlob("html/*.html"))
 
 	http.HandleFunc("/", web_page)
