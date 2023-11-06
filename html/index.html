@@ -1,0 +1,10 @@
+{{template "header"}}
+
+<main>
+    <form action="/"  method="POST">
+       <textarea name="input" cols="50" rows="1"></textarea>
+       <br> <br>
+        <input type="submit" name="process" value="add" >
+    </form><pre><div>{{.Tasks}}</div></pre></main>
+
+{{template "footer"}}
