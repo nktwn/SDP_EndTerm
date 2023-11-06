@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 )
 
 var front *template.Template
 
-var config *back.Configuration
+var taskManager back.TaskManager
+var taskFactory back.TaskFactory
+var observer back.Observer
 
 type pageData struct {
 	Tasks     string
@@ -19,9 +22,6 @@ type pageData struct {
 
 func web_page(result http.ResponseWriter, call *http.Request) {
 	data := pageData{}
-	taskManager := config.TaskManager
-	taskFactory := config.TaskFactory
-	observer := config.Observer
 
 	if call.URL.Path != "/" {
 		data.ShowError = 404
@@ -32,13 +32,26 @@ func web_page(result http.ResponseWriter, call *http.Request) {
 	if call.Method == "GET" {
 		front.ExecuteTemplate(result, "index.html", data)
 	} else if call.Method == "POST" {
-		if call.FormValue("process") == "add" {
+		switch call.FormValue("process") {
+		case "add":
 			nameOfTask := call.FormValue("input")
 
 			task := taskFactory.CreateTask(nameOfTask)
 			taskManager.AddTask(task)
 			observer.Notify(task)
 
+			data.Tasks = taskManager.GetTasks()
+			front.ExecuteTemplate(result, "index.html", data)
+		case "done":
+			taskId, err := strconv.Atoi(call.FormValue("input"))
+
+			if err != nil {
+				data.ShowError = 400
+				data.ErrorCall = "Bad request"
+				errorCall(result, call, &data)
+			}
+
+			taskManager.MarkDone(taskId)
 			data.Tasks = taskManager.GetTasks()
 			front.ExecuteTemplate(result, "index.html", data)
 		}
@@ -56,10 +69,11 @@ func errorCall(result http.ResponseWriter, call *http.Request, data *pageData) {
 	front.ExecuteTemplate(result, "error.html", data)
 }
 
-
-
 func Start_page() {
-	config = back.GetConfig()
+	config := back.GetConfig()
+	taskManager = config.TaskManager
+	taskFactory = config.TaskFactory
+	observer = &config.Observer
 
 	front = template.Must(template.ParseGlob("html/*.html"))
 
