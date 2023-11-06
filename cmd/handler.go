@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 var front *template.Template
@@ -39,6 +40,15 @@ func web_page(result http.ResponseWriter, call *http.Request) {
 			task := taskFactory.CreateTask(nameOfTask)
 			taskManager.AddTask(task)
 			observer.Notify(task)
+
+			data.Tasks = taskManager.GetTasks()
+			front.ExecuteTemplate(result, "index.html", data)
+		case "add with time":
+			nameOfTask := call.FormValue("input")
+
+			task := taskFactory.CreateTimedTask(nameOfTask, time.Now().Add(48*time.Hour))
+			taskManager.AddTask(task)
+			observer.Notify(task.TaskBasic)
 
 			data.Tasks = taskManager.GetTasks()
 			front.ExecuteTemplate(result, "index.html", data)
