@@ -14,3 +14,4 @@ func (f *TaskFactory) CreateTask(name string) *Task {
 	f.nextID++
 	return &Task{ID: f.nextID, Name: name, Done: false}
 }
+

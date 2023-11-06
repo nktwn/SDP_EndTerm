@@ -15,6 +15,7 @@ func GetConfig() *Configuration {
 	taskFactory := TaskFactory{}
 	taskManager := TaskManager{}
 	observer := TaskObserver{}
+	
 	once.Do(func() {
 		instance = &Configuration{
 			TaskFactory: taskFactory,
