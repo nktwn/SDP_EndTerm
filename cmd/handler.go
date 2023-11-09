@@ -38,11 +38,17 @@ func web_page(result http.ResponseWriter, call *http.Request) {
 			nameOfTask := call.FormValue("input")
 
 			task := taskFactory.CreateTask(nameOfTask)
-			taskManager.AddTask(task)
-			observer.Notify(task)
+			if task == nil {
+				data.ShowError = 400
+				data.ErrorCall = "Невозможно создать задачу: пустое имя или задача уже существует."
+				errorCall(result, call, &data)
+			} else {
+				taskManager.AddTask(task)
+				observer.Notify(task)
 
-			data.Tasks = taskManager.GetTasks()
-			front.ExecuteTemplate(result, "index.html", data)
+				data.Tasks = taskManager.GetTasks()
+				front.ExecuteTemplate(result, "index.html", data)
+			}
 		case "add with time":
 			nameOfTask := call.FormValue("input")
 

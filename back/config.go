@@ -12,10 +12,10 @@ var instance *Configuration
 var once sync.Once
 
 func GetConfig() *Configuration {
-	taskFactory := TaskFactory{}
 	taskManager := TaskManager{}
+	taskFactory := TaskFactory{taskManager: &taskManager}
 	observer := TaskObserver{}
-	
+
 	once.Do(func() {
 		instance = &Configuration{
 			TaskFactory: taskFactory,

@@ -44,3 +44,18 @@ func (manager *TaskManager) MarkDone(taskID int) {
 
 	}
 }
+
+func (manager *TaskManager) IsTaskExists(name string) bool {
+	for _, task := range manager.tasks {
+		if basicTask, ok := task.(*TaskBasic); ok {
+			if basicTask.Name == name {
+				return true
+			}
+		} else if timedTask, ok := task.(*TimedTask); ok {
+			if timedTask.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}
