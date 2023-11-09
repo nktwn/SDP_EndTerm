@@ -14,6 +14,7 @@ type TaskManager struct {
 
 func (manager *TaskManager) AddTask(task Tasker) {
 	manager.tasks = append(manager.tasks, task)
+
 	fmt.Println(task.String())
 }
 
@@ -32,6 +33,14 @@ func (manager *TaskManager) MarkDone(taskID int) {
 				basicTask.Done = true
 				return
 			}
+
+		} else if TimedTask, ok := task.(*TimedTask); ok {
+			basicTask := TimedTask.TaskBasic
+			if basicTask.ID == taskID {
+				basicTask.Done = true
+				return
+			}
 		}
+
 	}
 }
