@@ -8,7 +8,7 @@ type TaskFactory struct {
 }
 
 func (f *TaskFactory) CreateTask(name string) *TaskBasic {
-	if name == "" || f.taskManager.IsTaskExists(name) { // обращаемся через указатель
+	if name == "" || f.taskManager.IsTaskExists(name) {
 		return nil
 	}
 	f.nextID++
